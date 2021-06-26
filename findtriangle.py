@@ -1,3 +1,4 @@
+#submit 
 from pyspark import SparkConf, SparkContext
 
 def FindTriangle(edges, raw) :
@@ -42,18 +43,20 @@ def FindTriangle(edges, raw) :
 
     def findtrianglecnt(x) :
         listt = []
-        for we in x :
-            values = we[1]
-            # check $ and wedge
-            if "$" in values and len(values) > 1 :
-                values = set(values) - {"$"}
-                for value in values :
-                    listt.append((we[0][0],we[0][1],value))
+        # check $ and wedge
+        if "$" in x[1] :
+            values = set(x[1]) - {"$"}
+            for value in values :
+                listt.append((x[0][0],x[0][1],value))
         return listt
 
     #triangle list
-    aa = sc.parallelize(findtrianglecnt(final_reducer_output.collect())).flatMap(lambda a : a)
+    aa = final_reducer_output.flatMap(findtrianglecnt)
+
+    #triangle count
+    cnt = aa.count()
     
+    aa = aa.flatMap(lambda a : a)
     tmp2 = aa.map(lambda w : (str(w),1))
     wc2 = tmp2.reduceByKey(lambda a,b : a+ b)
     print('-----')
@@ -73,8 +76,7 @@ def FindTriangle(edges, raw) :
 
     cntcc = cc.flatMap(takeCC).sortByKey(False)
     print("#4 clustering coefficient top list = ", cntcc.take(10))
-    #triangle count
-    cnt = len(findtrianglecnt(final_reducer_output.collect()))
+    
     return cnt
 
     
@@ -85,4 +87,4 @@ if __name__ == "__main__" :
     edges = raw.map(lambda line : tuple(map(int, line.split("\t"))))
     trai = FindTriangle(edges, raw)
     print("---------------------------")
-    print("#1 triangles cnt = : ", trai)
+    print("#1 sum of triangles = : ", trai)
